@@ -68,7 +68,7 @@ static void Task1_func(void)
 /* 任务2处理函数 */
 static void Task2_func(void)
 {
-	/* 运行100次后，使Task1以“RY_TASK_TIMER_READY”就绪 */
+    /* 运行100次后，使Task1以“RY_TASK_TIMER_READY”就绪 */
 }
 /* 任务3处理函数 */
 static void Task2_func(void)
@@ -77,18 +77,15 @@ static void Task2_func(void)
 
 void ry_board_init(void)
 {
-	/* 系统时基初始化，如配置成1ms的定时中断，提供给系统使用 */
+    /* 系统时基初始化，如配置成1ms的定时中断，提供给系统使用 */
     tp_systick_cfg();
 	
-	/* 任务1，特权、常待机、唤醒后就绪2000ms自动待机 */
-    ry_task_reg(&Task1, Task1_func,
-                RY_TASK_MODE_SUPER, RY_TASK_STBY, "Task1", 2000);
-	/* 任务2，普通、100ms运行一次 */
-    ry_task_reg(&Task2, Task2_func,
-                RY_TASK_MODE_NORMAL, RY_TASK_READY, "Task2", 100);
-	/* 任务3，特权、持续就绪（时间参数无效） */
-    ry_task_reg(&Task3, Task3_func,
-                RY_TASK_MODE_SUPER, RY_TASK_READY, "Task3", 0);
+    /* 任务1，特权、常待机、唤醒后就绪2000ms自动待机 */
+    ry_task_reg(&Task1, Task1_func, RY_TASK_MODE_SUPER, RY_TASK_STBY, "Task1", 2000);
+    /* 任务2，普通、100ms运行一次 */
+    ry_task_reg(&Task2, Task2_func, RY_TASK_MODE_NORMAL, RY_TASK_READY, "Task2", 100);
+    /* 任务3，特权、持续就绪（时间参数无效） */
+    ry_task_reg(&Task3, Task3_func, RY_TASK_MODE_SUPER, RY_TASK_READY, "Task3", 0);
 }
 ```
 

@@ -82,8 +82,10 @@ void ry_board_init(void)
 	
     /* 任务1，特权、常待机、唤醒后就绪2000ms自动待机 */
     ry_task_reg(&Task1, Task1_func, RY_TASK_MODE_SUPER, RY_TASK_STBY, "Task1", 2000);
+    
     /* 任务2，普通、100ms运行一次 */
     ry_task_reg(&Task2, Task2_func, RY_TASK_MODE_NORMAL, RY_TASK_READY, "Task2", 100);
+    
     /* 任务3，特权、持续就绪（时间参数无效） */
     ry_task_reg(&Task3, Task3_func, RY_TASK_MODE_SUPER, RY_TASK_READY, "Task3", 0);
 }

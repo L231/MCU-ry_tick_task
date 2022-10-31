@@ -1,6 +1,6 @@
 # MCU-ry_tick_task
 # 概述  
-* **三种任务状态**  
+* **三类任务状态**  
   * 就绪态  
   * 挂起态  
   * 待机态  
@@ -51,12 +51,12 @@ int main(void)
 ## 注册任务  
 **注册三个任务：**  
 * **任务1**  
-  * 特权模式、常待机，唤醒后就绪2000ms自动待机。  
+  * 特权模式、常待机，**唤醒后就绪2000ms自动待机**。  
 * **任务2**  
-  * 普通模式、100ms运行一次；  
+  * 普通模式、**100ms运行一次**；  
   * 运行100次后，使Task1以“RY_TASK_TIMER_READY”就绪。  
 * **任务3**  
-  * 特权模式、持续就绪。
+  * 特权模式、**持续就绪**。
 ```
 static ry_task_t Task1;
 static ry_task_t Task2;
@@ -78,7 +78,7 @@ static void Task2_func(void)
 void ry_board_init(void)
 {
 	/* 系统时基初始化，如配置成1ms的定时中断，提供给系统使用 */
-	tp_systick_cfg();
+    tp_systick_cfg();
 	
 	/* 任务1，特权、常待机、唤醒后就绪2000ms自动待机 */
     ry_task_reg(&Task1, Task1_func,

@@ -1,7 +1,7 @@
 #ifndef __RY_DEF_H__
-	#define	__RY_DEF_H__
-	
-	
+    #define    __RY_DEF_H__
+    
+    
 
 /* 是否使用临界段代码保护 */
 #define  RY_USE_CRITICAL_SECTION  0

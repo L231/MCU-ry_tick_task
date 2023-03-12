@@ -1,5 +1,5 @@
 #ifndef __RY_TASK_H__
-	#define	__RY_TASK_H__
+    #define    __RY_TASK_H__
 
 
 
@@ -22,6 +22,9 @@ typedef enum
     RY_TASK_TIMER_READY,  /* 定时长就绪,时间片机制，特权任务专用 */
     RY_TASK_SUSPEND,      /* 挂起态，被移至挂起链表 */
     RY_TASK_STBY,         /* 待机态，被移至待机链表，只能等待别人唤醒 */
+
+    RY_BACK,              /* 后台模式 */
+    RY_IT,                /* 中断模式 */
 }ry_task_type_t;
 
 
@@ -31,6 +34,7 @@ typedef struct
     ry_list_t            ready;       /* 就绪链表 */
     ry_list_t            suspend;     /* 挂起链表 */
     ry_list_t            standby;     /* 待机链表 */
+    ry_list_t            it;          /* 中断链表 */
 }ry_sys_list_t;
 
 
@@ -44,19 +48,20 @@ typedef struct
     uint32_t             remaining_tick;      /* 闹钟时间 */
     uint32_t             init_tick;           /* 时长，配合系统时间生成闹钟时间 */
     ry_list_t            list;                /* 链表节点 */
+    ry_list_t            it_list;             /* 中断函数中可使用的链表节点 */
 }ry_task_t;
 
-	
-						
+    
+                        
 
 extern void ry_task_init(void);
 extern void ry_task_reg(ry_task_t *task, void (*func)(void),
                 uint8_t mode, uint8_t status, char *name, uint32_t tick);
 extern void ry_task_run(void);
 
-extern void ry_task_recover(ry_task_t *task, uint8_t status);
-extern void ry_task_suspend(ry_task_t *task, uint32_t tick);
-extern void ry_task_standby(ry_task_t *task);
+extern void ry_task_recover(ry_task_t *task, uint8_t status, uint8_t run_mode);
+extern void ry_task_suspend(ry_task_t *task, uint32_t tick, uint8_t run_mode);
+extern void ry_task_standby(ry_task_t *task, uint8_t run_mode);
 
 
 

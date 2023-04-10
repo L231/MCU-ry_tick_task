@@ -15,7 +15,11 @@
 * **两个组件**  
   * 串口接收状态机  
   * 设备校准表格  
+
+*网盘下载地址：https://pan.baidu.com/s/1uoS-Xpm8JSPdkq5KYSMFFA?pwd=g1di*
 ---
+
+
 # 如何使用(以STM32F103举例)  
 ## MCU建立系统时基  
 可使用任意一个定时器外设，配置成系统时基，供`ry_tick_task`使用  

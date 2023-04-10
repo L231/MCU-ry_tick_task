@@ -6,7 +6,7 @@
 
 extern const CmdList_t gUserCmdList[];
 
-
+uint8_t (*__MsgHandleHook)(Msg_t *);
 
 
 
@@ -14,274 +14,297 @@ extern const CmdList_t gUserCmdList[];
 
 uint8_t ry_cs_check(uint8_t *buf, uint16_t len)
 {
-    uint8_t cs = 0;
-    uint16_t pos;
-    for(pos = 0; pos < len; pos++)
-    {
-        cs += *buf++;
-    }
-    return (~cs);
+	uint8_t cs = 0;
+	uint16_t pos;
+	for(pos = 0; pos < len; pos++)
+	{
+		cs += *buf++;
+	}
+	return (~cs);
 }
 
-/* …Ë÷√CS–£—È */
+/* ËÆæÁΩÆCSÊ†°È™å */
 void ry_comm_uart_cs_check_cfg(CommUart_t *uart, uint8_t p)
 {
-    uart->flag_cs = p;
+	uart->flag_cs = p;
 }
 
 
-/* øΩ±¥Õ®–≈ ˝æ›£¨rx÷¡tx */
+/* Êã∑Ë¥ùÈÄö‰ø°Êï∞ÊçÆÔºårxËá≥tx */
 static uint16_t _get_rx_msg(CommUart_t *uart)
 {
-    uint16_t len        = uart->rx_cnt;
+	uint16_t len        = uart->rx_cnt;
 #if RY_COMM_ONLY_RXMSG == 0
-    uint16_t pos;
-    
-    for(pos = 0; pos < len; pos++)
-    {
-        uart->tx.buf[pos] = uart->rx.buf[pos];
-    }
-    uart->msg           = &uart->tx;
-    uart->rx_cnt        = 0;
+	uint16_t pos;
+	
+	for(pos = 0; pos < len; pos++)
+	{
+		uart->tx.buf[pos] = uart->rx.buf[pos];
+	}
+	uart->msg           = &uart->tx;
+	uart->rx_cnt        = 0;
 #else
-    uart->msg           = &uart->rx;
+	uart->msg           = &uart->rx;
 #endif
-    uart->msg->len      = len;
-    return len;
+	uart->msg->len      = len;
+	return len;
 }
 
 
-
-/* ◊¢≤·¥Æø⁄Õ®–≈øÿ÷∆øÈ£¨ƒ⁄≤øª·Õ¨≤Ω◊¢≤·¥Æø⁄Ω” ’¥¶¿Ì»ŒŒÒ */
+/* Ê≥®ÂÜå‰∏≤Âè£ÈÄö‰ø°ÊéßÂà∂ÂùóÔºåÂÜÖÈÉ®‰ºöÂêåÊ≠•Ê≥®ÂÜå‰∏≤Âè£Êé•Êî∂Â§ÑÁêÜ‰ªªÂä° */
 void ry_comm_uart_reg(CommUart_t *uart,
-                    uint8_t     flag_cs,                     /* CS–£—È±Í ∂£¨1±Ì æø™∆ÙCS–£—È */
-                    uint8_t     mcu_no,                      /* µ±«∞MCUµƒ±Í∫≈ */
-                    uint8_t    *msg_head,                    /* ±®Õ∑£¨≤ª π”√±®Õ∑÷∏¡Ó¬Î∆´“∆Œ™0 */
-                    uint8_t     cmd_offset,                  /* ÷∏¡Ó¬Îµƒ∆´“∆Œª÷√ */
-                    void      (*send)(uint8_t *, uint16_t),  /* Õ®–≈µƒ∑¢ÀÕ∫Ø ˝ */
+                    uint8_t     flag_cs,                     /* CSÊ†°È™åÊ†áËØÜÔºå1Ë°®Á§∫ÂºÄÂêØCSÊ†°È™å */
+                    uint8_t     mcu_no,                      /* ÂΩìÂâçMCUÁöÑÊ†áÂè∑ */
+                    uint8_t    *msg_head,                    /* Êä•Â§¥Ôºå‰∏ç‰ΩøÁî®Êä•Â§¥Êåá‰ª§Á†ÅÂÅèÁßª‰∏∫0 */
+                    uint8_t     cmd_offset,                  /* Êåá‰ª§Á†ÅÁöÑÂÅèÁßª‰ΩçÁΩÆ */
+                    void      (*send)(uint8_t *, uint16_t),  /* ÈÄö‰ø°ÁöÑÂèëÈÄÅÂáΩÊï∞ */
 #if RY_COMM_USE_RY_TICK_TASK == 1
-                    uint8_t   (*msg_handle)(Msg_t *),        /* ±®Œƒ¥¶¿Ì∫Ø ˝£¨”√ªßø…◊‘∂®“Â */
-                    uint8_t     task_tick,                   /* »ŒŒÒµƒ÷‹∆⁄£¨÷‹∆⁄–‘¥¶¿ÌÕ®–≈ */
-                    void      (*task_func)(void))            /* »ŒŒÒ÷˜ÃÂ */
+                    uint8_t   (*msg_handle)(Msg_t *),        /* Êä•ÊñáÂ§ÑÁêÜÂáΩÊï∞ÔºåÁî®Êà∑ÂèØËá™ÂÆö‰πâ */
+                    uint8_t     task_tick,                   /* ‰ªªÂä°ÁöÑÂë®ÊúüÔºåÂë®ÊúüÊÄßÂ§ÑÁêÜÈÄö‰ø° */
+                    void      (*task_func)(void))            /* ‰ªªÂä°‰∏ª‰Ωì */
 #else
-                    uint8_t   (*msg_handle)(Msg_t *))        /* ±®Œƒ¥¶¿Ì∫Ø ˝£¨”√ªßø…◊‘∂®“Â */
+                    uint8_t   (*msg_handle)(Msg_t *))        /* Êä•ÊñáÂ§ÑÁêÜÂáΩÊï∞ÔºåÁî®Êà∑ÂèØËá™ÂÆö‰πâ */
 #endif
 {
     uint8_t len = 0;
-    uart->comm_status         = COMM_UART_IDLE;
-    uart->last_rx_cnt         = 0;
-    uart->rx_cnt              = 0;
-    uart->err                 = COMMAND_RUN_OK;
-    uart->msg                 = RY_NULL;
-    uart->flag_ack            = 1;
-    uart->flag_cs             = flag_cs;
-    uart->send                = send;
-    uart->msg_handle          = msg_handle;
-    /* ÷∏¡Ó¬Îµƒ∆´“∆£¨“≤æÕ «±®Õ∑µƒ≥§∂»£¨œﬁ∂®∆‰¥Û–° */
-    if(cmd_offset > COMM_MSG_MAX_LEN)
-        cmd_offset = COMM_MSG_MAX_LEN;
-    for(; len < cmd_offset; len++)
-    {
-        /* ª∫¥Ê±®Õ∑ */
-        uart->msg_info.head[len] = msg_head[len];
-    }
+	uart->comm_status         = COMM_UART_IDLE;
+	uart->last_rx_cnt         = 0;
+	uart->rx_cnt              = 0;
+	uart->err                 = COMMAND_RUN_OK;
+	uart->msg                 = RY_NULL;
+	uart->flag_ack            = 1;
+	uart->flag_cs             = flag_cs;
+	uart->send                = send;
+	uart->msg_handle          = msg_handle;
+	uart->handle_hook         = RY_NULL;
+	/* Êåá‰ª§Á†ÅÁöÑÂÅèÁßªÔºå‰πüÂ∞±ÊòØÊä•Â§¥ÁöÑÈïøÂ∫¶ÔºåÈôêÂÆöÂÖ∂Â§ßÂ∞è */
+	if(cmd_offset > COMM_MSG_MAX_LEN)
+	    cmd_offset = COMM_MSG_MAX_LEN;
+	for(; len < cmd_offset; len++)
+	{
+	    /* ÁºìÂ≠òÊä•Â§¥ */
+	    uart->msg_info.head[len] = msg_head[len];
+	}
     uart->msg_info.mcu_no     = mcu_no;
     uart->msg_info.cmd_offset = cmd_offset;
 #if RY_COMM_USE_RY_TICK_TASK == 1
 #if RY_COMM_USE_DMA_RECEIVE_MODE == 0
-    ry_task_reg(&uart->task, task_func, RY_TASK_MODE_NORMAL, RY_TASK_READY, "CUM", task_tick);
+	ry_task_reg(&uart->task, task_func, RY_TASK_MODE_NORMAL, RY_TASK_READY, "CUM", task_tick);
 #else
-    ry_task_reg(&uart->task, task_func, RY_TASK_MODE_NORMAL, RY_TASK_STBY, "CUM", task_tick);
+	ry_task_reg(&uart->task, task_func, RY_TASK_MODE_NORMAL, RY_TASK_STBY, "CUM", task_tick);
 #endif
 #endif
 }
 
 
-/* ¥Æø⁄Ω” ’¥¶¿Ìµƒ◊¥Ã¨ª˙£¨DMAƒ£ Ω°¢RTOSƒ£ Ωœ¬£¨∂ºª·π“∆◊¥Ã¨ª˙ */
+/* ‰∏≤Âè£Êé•Êî∂Â§ÑÁêÜÁöÑÁä∂ÊÄÅÊú∫ÔºåDMAÊ®°Âºè„ÄÅRTOSÊ®°Âºè‰∏ãÔºåÈÉΩ‰ºöÊåÇËµ∑Áä∂ÊÄÅÊú∫ */
 void ry_msg_state_machine(CommUart_t *uart)
 {
-    switch(uart->comm_status)
-    {
-    /* ª∫¥Ê±®Œƒ */
-    case COMM_UART_IDLE :
+	switch(uart->comm_status)
+	{
+			/* ÁºìÂ≠òÊä•Êñá */
+		case COMM_UART_IDLE :
 #if RY_COMM_USE_DMA_RECEIVE_MODE == 0
-        ry_comm_get_rx_finish_status(uart);
+			ry_comm_get_rx_finish_status(uart);
 #endif
-        break;
-    case COMM_UART_CHECK :
-        if(_get_rx_msg(uart))
-        {
-            uart->err = COMMAND_RUN_OK;
-            /* ±®Œƒµƒ÷∏¡Ó”–∆´“∆ ±£¨ºÏ≤È±®Õ∑ */
-            if(uart->msg_info.cmd_offset)
-            {
-                uint8_t pos = 0;
-                /* ≈–∂œ±®Õ∑ «∑Òœ‡µ» */
-                for(; pos < uart->msg_info.cmd_offset; pos++)
-                {
-                    /* ±®Õ∑≤ªœ‡µ»£¨µ±«∞±®Œƒ…·∆˙£¨Õ¨ ±≤ªªÿ∏¥÷˜ª˙ */
-                    if(uart->msg_info.head[pos] != uart->msg->buf[pos])
-                    {
-                        uart->err         = COMMAND_TRANSFER_FAIL;
-#if RY_COMM_HEAD_FAIL_NACK == 1
-                        uart->msg->len    = 0;
-                        uart->comm_status = COMM_UART_SEND;
-#else
-                        uart->comm_status = COMM_UART_ERR;
-#endif
-                        return;
-                    }
-                }
-            }
-            /* ≤ª π”√CS–£—È£¨ªÚ’ﬂ–£—ÈÕ®π˝ */
-            if(0 == uart->flag_cs || ry_cs_check(uart->msg->buf, uart->msg->len - 1) == uart->msg->buf[uart->msg->len - 1])
-            {
-                uart->err         = COMMAND_RUN_OK;
-                uart->comm_status = COMM_UART_HANDLE;
-                break;
-            }
-            uart->err             = COMMAND_TRANSFER_FAIL;
-            uart->comm_status     = COMM_UART_ERR;
             break;
-        }
-        uart->comm_status         = COMM_UART_SEND;
-        break;
-        /* ¥¶¿Ì ’µΩµƒ±®Œƒ */
-    case COMM_UART_HANDLE :
-        uart->err                 = uart->msg_handle(uart->msg);
-        if(COMMAND_RUN_OK == uart->err)
-            uart->comm_status     = COMM_UART_SEND;
-        else
-            uart->comm_status     = COMM_UART_ERR;
-        break;
-        /* “Ï≥£«Èøˆ */
-    case COMM_UART_ERR :
-        uart->msg->buf[0]         = COMMAND_FAIL_MASK;
-        uart->msg->buf[1]         = uart->msg_info.mcu_no;
-        uart->msg->buf[2]         = uart->err;
-        uart->msg->len            = 4;
-        uart->comm_status         = COMM_UART_SEND;
-        break;
-        /* œÏ”¶±®Œƒµƒ∑¢ÀÕ∂À */
-    case COMM_UART_SEND :
-        /* ≥§∂»≤ªŒ™0£¨Õ¨ ±Œ¥◊™∑¢±®Œƒ∏¯¥”ª˙ */
-        if(uart->msg->len && uart->flag_ack == 1)
-        {
-            uart->msg->buf[uart->msg->len - 1] = ry_cs_check(uart->msg->buf, uart->msg->len - 1);
-            uart->send(uart->msg->buf, uart->msg->len);
-        }
-        /* ±®Œƒ¥¶¿ÌÕÍ£¨œ‡πÿ≤Œ ˝∏≥≥ı º÷µ */
+		case COMM_UART_CHECK :
+			if(_get_rx_msg(uart))
+			{
+				uart->err = COMMAND_SLAVE_NO_ACK;
+			    /* Êä•ÊñáÁöÑÊåá‰ª§ÊúâÂÅèÁßªÊó∂ÔºåÊä•Â§¥Âá∫Áé∞‰∫ÜÂºÇÂ∏∏ */
+			    if(uart->msg_info.cmd_offset)
+			    {
+			        uint8_t pos = 0;
+			        /* Âà§Êñ≠Êä•Â§¥ÊòØÂê¶Áõ∏Á≠â */
+			        for(; pos < uart->msg_info.cmd_offset; pos++)
+			        {
+	                    /* Êä•Â§¥‰∏çÁõ∏Á≠âÔºåÂΩìÂâçÊä•ÊñáËàçÂºÉÔºåÂêåÊó∂‰∏çÂõûÂ§ç‰∏ªÊú∫ */
+			            if(uart->msg_info.head[pos] != uart->msg->buf[pos])
+			            {
+			            	uart->err         = COMMAND_TRANSFER_FAIL;
+#if RY_COMM_HEAD_FAIL_NACK == 1
+		                    uart->msg->len    = 0;
+		                    uart->comm_status = COMM_UART_SEND;
+#else
+		                    uart->comm_status = COMM_UART_ERR;
+#endif
+		                    return;
+			            }
+			        }
+			    }
+				/* ‰∏ç‰ΩøÁî®CSÊ†°È™åÔºåÊàñËÄÖÊ†°È™åÈÄöËøá */
+				if(0 == uart->flag_cs || ry_cs_check(uart->msg->buf, uart->msg->len - 1) == uart->msg->buf[uart->msg->len - 1])
+				{
+					uart->err         = COMMAND_RUN_OK;
+					uart->comm_status = COMM_UART_HANDLE;
+					break;
+				}
+				uart->err             = COMMAND_TRANSFER_FAIL;
+				uart->comm_status     = COMM_UART_ERR;
+			}
+			break;
+			/* Â§ÑÁêÜÊî∂Âà∞ÁöÑÊä•Êñá */
+		case COMM_UART_HANDLE :
+			uart->err                 = uart->msg_handle(uart->msg);
+			/* ‰ªéÊú∫Êú™Êä•ÈîôËØØÁ†ÅÔºåÂêåÊó∂Èí©Â≠êÂáΩÊï∞‰ΩøËÉΩÔºå‰∏î‰∏ç‰∏∫Á©∫ */
+			if(COMMAND_RUN_OK == uart->err && RY_NULL != uart->handle_hook)
+			{
+				__MsgHandleHook       = uart->handle_hook;
+				uart->handle_hook     = RY_NULL;
+				/* ÂÖàÊ∏ÖÊéâÈí©Â≠êÂáΩÊï∞ÔºåÂÜçËøêË°åÈí©Â≠êÂáΩÊï∞(ÂÜÖÈÉ®ÂÖÅËÆ∏ÈáçÊñ∞Ê≥®ÂÜåÈí©Â≠êÂáΩÊï∞) */
+				uart->err             = __MsgHandleHook(uart->msg);
+			}
+
+			if(COMMAND_RUN_OK == uart->err)
+				uart->comm_status     = COMM_UART_SEND;
+			else
+			{
+				uart->comm_status     = COMM_UART_ERR;
+				uart->handle_hook     = RY_NULL;
+				/* ‰∏çÁÆ°ÊòØuart1„ÄÅuart2Á≠âÁ≠âÔºåÊúâ‰∫∫Êä•ÈîôËØØÁ†ÅÔºåÂ∞±Âº∫Âà∂Â∫îÁ≠î‰∏ä‰ΩçÊú∫ */
+				uart->flag_ack        = 1;
+			}
+			break;
+			/* ÂºÇÂ∏∏ÊÉÖÂÜµ */
+		case COMM_UART_ERR :
+			uart->msg->buf[0]         = COMMAND_FAIL_MASK;
+			uart->msg->buf[1]         = uart->msg_info.mcu_no;
+			uart->msg->buf[2]         = uart->err;
+			uart->msg->len            = 4;
+			uart->comm_status         = COMM_UART_SEND;
+			break;
+			/* ÂìçÂ∫îÊä•ÊñáÁöÑÂèëÈÄÅÁ´Ø */
+		case COMM_UART_SEND :
+			/* ÈïøÂ∫¶‰∏ç‰∏∫0ÔºåÂêåÊó∂Êú™ËΩ¨ÂèëÊä•ÊñáÁªô‰ªéÊú∫ */
+			if(uart->msg->len && uart->flag_ack == 1)
+			{
+				uart->msg->buf[uart->msg->len - 1] = ry_cs_check(uart->msg->buf, uart->msg->len - 1);
+				uart->send(uart->msg->buf, uart->msg->len);
+			}
+			/* Êä•ÊñáÂ§ÑÁêÜÂÆåÔºåÁõ∏ÂÖ≥ÂèÇÊï∞ËµãÂàùÂßãÂÄº */
 #if RY_COMM_ONLY_RXMSG == 1
-        uart->rx_cnt              = 0;
+			uart->rx_cnt              = 0;
 #endif
-        uart->last_rx_cnt         = 0;
-        uart->msg                 = RY_NULL;
-        uart->flag_ack            = 1;
-        uart->comm_status         = COMM_UART_IDLE;
+			uart->last_rx_cnt         = 0;
+			uart->msg                 = RY_NULL;
+			uart->flag_ack            = 1;
+			uart->comm_status         = COMM_UART_IDLE;
 #if RY_COMM_USE_DMA_RECEIVE_MODE == 1
-        /* ≥ı ºªØDMAµƒΩ” ’ */
-        if(uart->dma_receive_init)
-            uart->dma_receive_init();
+			/* ÂàùÂßãÂåñDMAÁöÑÊé•Êî∂ */
+			if(uart->dma_receive_init)
+				uart->dma_receive_init();
 #if RY_COMM_USE_RY_TICK_TASK == 1
-        /*  π»ŒŒÒΩ¯»Î¥˝ª˙£¨œ¬“ª∏ˆ±®Œƒ ’ÕÍ ±£¨ª·‘Ÿ¥ŒªΩ–— */
-        ry_task_standby(&uart->task, RY_BACK);
+			/* ‰Ωø‰ªªÂä°ËøõÂÖ•ÂæÖÊú∫Ôºå‰∏ã‰∏Ä‰∏™Êä•ÊñáÊî∂ÂÆåÊó∂Ôºå‰ºöÂÜçÊ¨°Âî§ÈÜí */
+			ry_task_standby(&uart->task, RY_BACK);
 #endif
 #endif
-        break;
-    default :
-        uart->comm_status         = COMM_UART_IDLE;
-        break;
-    }
+			break;
+		default :
+			uart->comm_status         = COMM_UART_IDLE;
+			break;
+	}
 }
 
 
-/* ±®ŒƒΩ” ’¥¶¿Ì£¨»Ù ’µΩ±®Œƒ‘Úµ˜”√◊¥Ã¨ª˙£¨¥¶¿ÌÕÍ∫ÛÕÀ≥ˆ */
+/* Êä•ÊñáÊé•Êî∂Â§ÑÁêÜÔºåËã•Êî∂Âà∞Êä•ÊñáÂàôË∞ÉÁî®Áä∂ÊÄÅÊú∫ÔºåÂ§ÑÁêÜÂÆåÂêéÈÄÄÂá∫ */
 void ry_comm_handle(CommUart_t *uart)
 {
-    do
-    {
-        ry_msg_state_machine(uart);
-    }while(uart->comm_status != COMM_UART_IDLE);
+	do
+	{
+		ry_msg_state_machine(uart);
+	}while(uart->comm_status != COMM_UART_IDLE);
 }
 
 
-/* ÷∏¡Ó≤È±Ì¥¶¿Ì£¨”√”⁄◊¢≤·Œ™◊¥Ã¨ª˙µƒ±®Œƒ¥¶¿Ì */
+/* Êåá‰ª§Êü•Ë°®Â§ÑÁêÜÔºåÁî®‰∫éÊ≥®ÂÜå‰∏∫Áä∂ÊÄÅÊú∫ÁöÑÊä•ÊñáÂ§ÑÁêÜ */
 uint8_t ry_msg_cmd_lookup(Msg_t *msg)
 {
-    uint8_t pos;
+	uint8_t pos;
 #if RY_COMM_ONLY_RXMSG == 0
-    MsgInfo_t *pMsgInfo = &TASK_CONTAINER_OF(msg, CommUart_t, tx)->msg_info;
+	MsgInfo_t *pMsgInfo = &TASK_CONTAINER_OF(msg, CommUart_t, tx)->msg_info;
 #else
-    MsgInfo_t *pMsgInfo = &TASK_CONTAINER_OF(msg, CommUart_t, rx)->msg_info;
+	MsgInfo_t *pMsgInfo = &TASK_CONTAINER_OF(msg, CommUart_t, rx)->msg_info;
 #endif
-    
-    for(pos = 0; gUserCmdList[pos].cmd != RY_NULL; pos++)
-    {
-        if(gUserCmdList[pos].cmd == msg->buf[pMsgInfo->cmd_offset])
-        {
-            if(gUserCmdList[pos].handle != RY_NULL)
-                return gUserCmdList[pos].handle(msg);
-        }
-    }
-    return COMMAND_NULL;
+	
+	for(pos = 0; gUserCmdList[pos].cmd != RY_NULL; pos++)
+	{
+		if(gUserCmdList[pos].cmd == msg->buf[pMsgInfo->cmd_offset])
+		{
+			if(gUserCmdList[pos].handle != RY_NULL)
+				return gUserCmdList[pos].handle(msg);
+		}
+	}
+	return COMMAND_NULL;
 }
 
 
-/* ¥¶¿Ì¥”MCU”¶¥µƒ±®Œƒ */
+/* Â§ÑÁêÜ‰ªéMCUÂ∫îÁ≠îÁöÑÊä•Êñá */
 uint8_t ry_slave_ack_msg_handle(Msg_t *msg)
 {
-    return COMMAND_RUN_OK;
+#if RY_COMM_ONLY_RXMSG == 0
+	CommUart_t *uart = TASK_CONTAINER_OF(msg, CommUart_t, tx);
+#else
+	CommUart_t *uart = TASK_CONTAINER_OF(msg, CommUart_t, rx);
+#endif
+	if(COMMAND_FAIL_MASK == msg->buf[0] && uart->msg_info.mcu_no == msg->buf[1] && 4 == msg->len)
+	{
+		/* ‰ªéÊú∫Êä•ÈîôËØØÁ†ÅÔºåÂº∫Âà∂Â∫îÁ≠î */
+		uart->flag_ack = 1;
+		return msg->buf[2];
+	}
+	return COMMAND_RUN_OK;
 }
 
 
 
 
-/* ªÒ»°Ω” ’ª∫¥Ê«¯µƒµÿ÷∑ */
+/* Ëé∑ÂèñÊé•Êî∂ÁºìÂ≠òÂå∫ÁöÑÂú∞ÂùÄ */
 uint8_t *ry_comm_uart_get_rx_buf(CommUart_t *uart)
 {
-    return uart->rx.buf;
+	return uart->rx.buf;
 }
 
 #if RY_COMM_USE_DMA_RECEIVE_MODE == 0
-/* ¥Æø⁄÷–∂œΩ” ’∫Ø ˝ */
+/* ‰∏≤Âè£‰∏≠Êñ≠Êé•Êî∂ÂáΩÊï∞ */
 void ry_uart_it_rec(CommUart_t *uart, uint8_t data)
 {
-    if(RY_COMM_BUF_SIZE > uart->rx_cnt)
-        uart->rx.buf[uart->rx_cnt++] = data;
+	if(RY_COMM_BUF_SIZE > uart->rx_cnt)
+		uart->rx.buf[uart->rx_cnt++] = data;
 }
 
-/* ªÒ»°Ω” ’ÕÍ≥…µƒ±Í÷æ */
+/* Ëé∑ÂèñÊé•Êî∂ÂÆåÊàêÁöÑÊ†áÂøó */
 uint8_t ry_comm_get_rx_finish_status(CommUart_t *uart)
 {
-    if(uart->rx_cnt > 0 && uart->last_rx_cnt == uart->rx_cnt)
+	if(uart->rx_cnt > 0 && uart->last_rx_cnt == uart->rx_cnt)
     {
         uart->comm_status = COMM_UART_CHECK;
-        return 1;
+		return 1;
     }
-    uart->last_rx_cnt = uart->rx_cnt;
-    return 0;
+	uart->last_rx_cnt = uart->rx_cnt;
+	return 0;
 }
 #else
-/* ±®Œƒ ’ÕÍ¡À(¥Æø⁄ø’œ–÷–∂œ)£¨∆Ù∂Ø◊¥Ã¨ª˙ */
+/* Êä•ÊñáÊî∂ÂÆå‰∫Ü(‰∏≤Âè£Á©∫Èó≤‰∏≠Êñ≠)ÔºåÂêØÂä®Áä∂ÊÄÅÊú∫ */
 uint8_t ry_dma_mode_start_state_machine(CommUart_t *uart, uint16_t rx_data_len)
 {
-    if(rx_data_len > 0)
-    {
+	if(rx_data_len > 0)
+	{
 #if RY_COMM_USE_RY_TICK_TASK == 1
-        ry_task_recover(&uart->task, RY_TASK_READY, RY_IT);
+		ry_task_recover(&uart->task, RY_TASK_READY, RY_IT);
 #endif
-        uart->rx_cnt      = rx_data_len;
-        uart->last_rx_cnt = rx_data_len;
-        uart->comm_status = COMM_UART_CHECK;
-        return 1;
-    }
-    return 0;
+		uart->rx_cnt      = rx_data_len;
+		uart->last_rx_cnt = rx_data_len;
+		uart->comm_status = COMM_UART_CHECK;
+		return 1;
+	}
+	return 0;
 }
 
-/* ◊¢≤·DMAΩ” ’≥ı ºªØªÿµ˜∫Ø ˝ */
+/* Ê≥®ÂÜåDMAÊé•Êî∂ÂàùÂßãÂåñÂõûË∞ÉÂáΩÊï∞ */
 void ry_dma_mode_callback_reg(CommUart_t *uart, void (*dma_rec_init)(void))
 {
-    uart->dma_receive_init = dma_rec_init;
+	uart->dma_receive_init = dma_rec_init;
 }
 
 #endif

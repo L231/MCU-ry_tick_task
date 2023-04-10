@@ -3,7 +3,7 @@
 
 
 
-/* ÏµÍ³Á´±í */
+/* ç³»ç»Ÿé“¾è¡¨ */
 static ry_sys_list_t gSysList;
 static uint32_t gLastTick = 0;
 
@@ -13,214 +13,210 @@ static uint32_t gLastTick = 0;
 static void _task_update(void);
 
 
-/* Ðé¶¨Òåº¯Êý£¬»ñÈ¡µ±Ç°ÏµÍ³Ê±»ù */
+
+/* è™šå®šä¹‰å‡½æ•°ï¼ŒèŽ·å–å½“å‰ç³»ç»Ÿæ—¶åŸº */
 ry_weak uint32_t ry_get_systick(void)
 {
-    return 0;
+	return 0;
 }
 
 
-/* Ðé¶¨Òåº¯Êý£¬°å¼¶³õÊ¼»¯ */
+/* è™šå®šä¹‰å‡½æ•°ï¼Œæ¿çº§åˆå§‹åŒ– */
 ry_weak void ry_board_init(void)
 {
-    
+	
 }
 
 void ry_task_init(void)
 {
-    ry_list_init(&gSysList.ready);
-    ry_list_init(&gSysList.suspend);
-    ry_list_init(&gSysList.standby);
-    ry_list_init(&gSysList.it);
-    ry_board_init();
+	ry_list_init(&gSysList.ready);
+	ry_list_init(&gSysList.suspend);
+	ry_list_init(&gSysList.it);
+	ry_board_init();
 }
 
 
-/* ÈÎÎñ×¢²á */
+/* ä»»åŠ¡æ³¨å†Œ */
 void ry_task_reg(ry_task_t *task, void (*func)(void),
                 uint8_t mode, uint8_t status, char *name, uint32_t tick)
 {
-    RY_NEW_IT_VARI;
-    task->name           = name;
-    task->mode           = mode;
-    task->status         = status;
-    task->func           = func;
-    task->init_tick      = tick;
-    task->remaining_tick = tick + ry_get_systick();
-    ry_list_init(&task->list);
-    ry_list_init(&task->it_list);
-    RY_INTERRUPT_OFF;
-    if(status == RY_TASK_STBY)
-        ry_list_insert_after(gSysList.standby.prev, &task->list);
-    else
-        ry_list_insert_after(gSysList.ready.prev, &task->list);
-    RY_INTERRUPT_ON;
+	RY_NEW_IT_VARI;
+	task->name           = name;
+	task->mode           = mode;
+	task->status         = status;
+	task->func           = func;
+	task->init_tick      = tick;
+	task->remaining_tick = tick + ry_get_systick();
+	ry_list_init(&task->list);
+	ry_list_init(&task->it_list);
+	RY_INTERRUPT_OFF;
+	if(status != RY_TASK_STBY)
+		ry_list_insert_after(gSysList.ready.prev, &task->list);
+	RY_INTERRUPT_ON;
 }
 
 
-/* ¸üÐÂ¾ÍÐ÷ÈÎÎñ£¬Ö´ÐÐÈÎÎñ²¢×ªÒÆ×´Ì¬ */
+/* æ›´æ–°å°±ç»ªä»»åŠ¡ï¼Œæ‰§è¡Œä»»åŠ¡å¹¶è½¬ç§»çŠ¶æ€ */
 void ry_task_run(void)
 {
-    ry_list_t *List;
-    RY_NEW_IT_VARI;
+	ry_list_t *List;
+	RY_NEW_IT_VARI;
 
-    /* Ë¢ÐÂ¹ÒÆðÁ´±í£¬ÓÐ¾ÍÐ÷ÈÎÎñÔòÒÀ´Î¸üÐÂÖÁ¾ÍÐ÷Á´±í */
-    if(gLastTick != ry_get_systick())
-    {
-        _task_update();
-        gLastTick = ry_get_systick();
-    }
+	/* åˆ·æ–°æŒ‚èµ·é“¾è¡¨ï¼Œæœ‰å°±ç»ªä»»åŠ¡åˆ™ä¾æ¬¡æ›´æ–°è‡³å°±ç»ªé“¾è¡¨ */
+	if(gLastTick != ry_get_systick())
+	{
+		_task_update();
+		gLastTick = ry_get_systick();
+	}
 
-    List = gSysList.ready.next;
-    /* ÓÐÈÎÎñ¾ÍÐ÷ÁË */
-    if(List != &gSysList.ready) 
-    {
-        ry_task_t *task = TASK_CONTAINER_OF(List, ry_task_t, list);
-        task->func();
-        
-        /* ÈÎÎñ×ÔÉíÒÑÖ÷¶¯½ø´ý»úÌ¬ */
-        if(task->status == RY_TASK_STBY)
-            return;
-        RY_INTERRUPT_OFF;
-        switch(task->mode)
-        {
-        case RY_TASK_MODE_SUPER :
-            /* ´Óµ±Ç°½ÚµãÍÑÀë */
-            ry_list_remove(&task->list);
-            if(task->status == RY_TASK_TIMER_READY)
-            {
-                /* ¾ÍÐ÷Ê±¼äÓÃÍê£¬×ªÈë´ý»ú */
-                if(ry_get_systick() - task->remaining_tick < RY_TICK_MAX_DIV_2)
-                {
-                    ry_list_insert_after(gSysList.standby.prev, &task->list);
-                    task->status = RY_TASK_STBY;
-                    break;
-                }
-            }
-            ry_list_insert_after(gSysList.ready.prev, &task->list);
-            break;
-        case RY_TASK_MODE_NORMAL :
-            /* ÆÕÍ¨ÈÎÎñ£¬ÔËÐÐÍêºó¹ÒÆð */
-            ry_task_suspend(task, task->init_tick, RY_BACK);
-            break;
-        }
-        RY_INTERRUPT_ON;
-    }
+	List = gSysList.ready.next;
+	if(List != &gSysList.ready) 
+	{
+		ry_task_t *task = TASK_CONTAINER_OF(List, ry_task_t, list);
+		task->func();
+		
+		/* ä»»åŠ¡è‡ªèº«å·²ä¸»åŠ¨è¿›å¾…æœºæ€ */
+		if(task->status == RY_TASK_STBY)
+			return;
+		RY_INTERRUPT_OFF;
+		switch(task->mode)
+		{
+			case RY_TASK_MODE_SUPER :
+				/* ä»Žå½“å‰èŠ‚ç‚¹è„±ç¦» */
+				ry_list_remove(&task->list);
+				if(task->status == RY_TASK_TIMER_READY)
+				{
+					/* å°±ç»ªæ—¶é—´ç”¨å®Œï¼Œè½¬å…¥å¾…æœº */
+					if(ry_get_systick() - task->remaining_tick < RY_TICK_MAX_DIV_2)
+					{
+						task->status = RY_TASK_STBY;
+						break;
+					}
+				}
+				ry_list_insert_after(gSysList.ready.prev, &task->list);
+				break;
+			case RY_TASK_MODE_NORMAL :
+				/* æ™®é€šä»»åŠ¡ï¼Œè¿è¡Œå®ŒåŽæŒ‚èµ· */
+				ry_task_suspend(task, task->init_tick, RY_BACK);
+				break;
+		}
+		RY_INTERRUPT_ON;
+	}
 }
 
 
-/* ÈÎÎñ×´Ì¬×ªÒÆ£¬×ªÒÆµ½ÐÂµÄÁ´±í */
+/* ä»»åŠ¡çŠ¶æ€è½¬ç§»ï¼Œè½¬ç§»åˆ°æ–°çš„é“¾è¡¨ */
 static void _task_ctr(ry_task_t *task, uint8_t run_mode)
 {
-    ry_list_t *List;
-    RY_NEW_IT_VARI;
+	ry_list_t *List;
+	RY_NEW_IT_VARI;
 
-    RY_INTERRUPT_OFF;
-    /* µ±Ç°ÔÚºóÌ¨ÔËÐÐ */
-    if(run_mode == RY_BACK)
-    {
-        ry_list_remove(&task->list);
-        switch(task->status)
-        {
-            case RY_TASK_READY :
-            case RY_TASK_TIMER_READY :
-                ry_list_insert_after(gSysList.ready.prev, &task->list);
-                break;
-            case RY_TASK_SUSPEND :
-                /* ÑÓÊ±Ê±¼ä´ÓÐ¡µ½´óÅÅÐò */
-                for(List = gSysList.suspend.next; List != &gSysList.suspend; List = List->next)
-                {
-                    /* Ê±¼ä±Èµ±Ç°½ÚµãµÄÐ¡£¬²åÔÚµ±Ç°½ÚµãÇ°Ãæ */
-                    if(task->remaining_tick < TASK_CONTAINER_OF(List, ry_task_t, list)->remaining_tick)
-                        break;
-                }
-                ry_list_insert_after(List->prev, &task->list);
-                break;
-            case RY_TASK_STBY :
-                ry_list_insert_after(gSysList.standby.prev, &task->list);
-                break;
-        }
-    }
-    /* µ±Ç°ÔÚÖÐ¶ÏÄÚÔËÐÐ£¬ÇÒÎ´ÉÏËø */
-    else if(&task->it_list == task->it_list.next && &task->it_list == task->it_list.prev)
-        ry_list_insert_after(gSysList.it.prev, &task->it_list);
-    RY_INTERRUPT_ON;
+	RY_INTERRUPT_OFF;
+	/* å½“å‰åœ¨åŽå°è¿è¡Œ */
+	if(run_mode == RY_BACK)
+	{
+		ry_list_remove(&task->list);
+		switch(task->status)
+		{
+			case RY_TASK_READY :
+			case RY_TASK_TIMER_READY :
+				ry_list_insert_after(gSysList.ready.prev, &task->list);
+				break;
+			case RY_TASK_SUSPEND :
+				/* å»¶æ—¶æ—¶é—´ä»Žå°åˆ°å¤§æŽ’åº */
+				for(List = gSysList.suspend.next; List != &gSysList.suspend; List = List->next)
+				{
+					/* æ—¶é—´æ¯”å½“å‰èŠ‚ç‚¹çš„å°ï¼Œæ’åœ¨å½“å‰èŠ‚ç‚¹å‰é¢ */
+					if(task->remaining_tick < TASK_CONTAINER_OF(List, ry_task_t, list)->remaining_tick)
+						break;
+				}
+				ry_list_insert_after(List->prev, &task->list);
+				break;
+			case RY_TASK_STBY :
+				break;
+		}
+	}
+	/* å½“å‰åœ¨ä¸­æ–­å†…è¿è¡Œï¼Œä¸”æœªä¸Šé” */
+	else if(&task->it_list == task->it_list.next && &task->it_list == task->it_list.prev)
+		ry_list_insert_after(gSysList.it.prev, &task->it_list);
+	RY_INTERRUPT_ON;
 }
 
-/* ¼ìË÷¹ÒÆðÁ´±í£¬ËùÓÐÑÓÊ±³¬Ê±µÄÈÎÎñ£¬×ªÒÆµ½¾ÍÐ÷Á´±í */
+/* æ£€ç´¢æŒ‚èµ·é“¾è¡¨ï¼Œæ‰€æœ‰å»¶æ—¶è¶…æ—¶çš„ä»»åŠ¡ï¼Œè½¬ç§»åˆ°å°±ç»ªé“¾è¡¨ */
 static void _task_update(void)
 {
-    uint32_t tick;
-    ry_task_t *task;
-    ry_list_t *List;
-    RY_NEW_IT_VARI;
+	uint32_t tick;
+	ry_task_t *task;
+	ry_list_t *List;
+	RY_NEW_IT_VARI;
 
-    RY_INTERRUPT_OFF;
-    /* ´¦ÀíÖÐ¶ÏÁ´±í */
-    for(List = gSysList.it.next; List != &gSysList.it;)
-    {
-        task = TASK_CONTAINER_OF(List, ry_task_t, it_list);
-        List = List->next;
-        tick = ry_get_systick();
-        if(tick - task->remaining_tick < RY_TICK_MAX_DIV_2)
-        {
-            /* ÖÐ¶ÏÖÐ¹ÒÆðµÄÈÎÎñÒÑ¾­³¬Ê±ÁË£¬Ö±½Ó×ª»»Îª¾ÍÐ÷Ì¬ */
-            if(task->status == RY_TASK_SUSPEND)
-                task->status = RY_TASK_READY;
-            /* ¶¨Ê±³¤¾ÍÐ÷µÄÈÎÎñÒÑ³¬Ê±£¬½øÈë´ý»úÌ¬ý»*/
-            else if(task->status == RY_TASK_TIMER_READY)
-                task->status = RY_TASK_STBY;
-        }
-        /* ´¦ÓÚºóÌ¨£¬²Ù×÷ÖÐ¶ÏÁ´±íµÄ½Úµã */
-        ry_list_remove(&task->it_list);
-        _task_ctr(task, RY_BACK);
-    }
-    /* »Ö¸´¹ÒÆðÁ´±íÖÐÒÑ³¬Ê±µÄÈÎÎñ */
-    for(List = gSysList.suspend.next; List != &gSysList.suspend;)
-    {
-        task = TASK_CONTAINER_OF(List, ry_task_t, list);
-        List = List->next;
-        /* ÑÓÊ±Ê±¼äµ½ÁË£¬Ìí¼Óµ½¾ÍÐ÷Á´±í */
-        if(ry_get_systick() - task->remaining_tick < RY_TICK_MAX_DIV_2)
-        {
-            ry_list_remove(&task->list);
-            ry_list_insert_after(gSysList.ready.prev, &task->list);
-            task->status = RY_TASK_READY;
-        }
-        else
-            break;
-    }
-    RY_INTERRUPT_ON;
+	RY_INTERRUPT_OFF;
+	/* å¤„ç†ä¸­æ–­é“¾è¡¨ */
+	for(List = gSysList.it.next; List != &gSysList.it;)
+	{
+		task = TASK_CONTAINER_OF(List, ry_task_t, it_list);
+		List = List->next;
+		tick = ry_get_systick();
+		if(tick - task->remaining_tick < RY_TICK_MAX_DIV_2)
+		{
+			/* ä¸­æ–­ä¸­æŒ‚èµ·çš„ä»»åŠ¡å·²ç»è¶…æ—¶äº†ï¼Œç›´æŽ¥è½¬æ¢ä¸ºå°±ç»ªæ€ */
+			if(task->status == RY_TASK_SUSPEND)
+				task->status = RY_TASK_READY;
+			/* å®šæ—¶é•¿å°±ç»ªçš„ä»»åŠ¡å·²ç»è¶…æ—¶äº†ï¼Œè¿›å…¥å¾…æœº */
+			else if(task->status == RY_TASK_TIMER_READY)
+				task->status = RY_TASK_STBY;
+		}
+		/* å¤„äºŽåŽå°ï¼Œæ“ä½œä¸­æ–­é“¾è¡¨çš„èŠ‚ç‚¹è¦å…ˆä¸Šé” */
+		ry_list_remove(&task->it_list);
+		_task_ctr(task, RY_BACK);
+	}
+	/* æ¢å¤æŒ‚èµ·é“¾è¡¨ä¸­å·²è¶…æ—¶çš„ä»»åŠ¡ */
+	for(List = gSysList.suspend.next; List != &gSysList.suspend;)
+	{
+		task = TASK_CONTAINER_OF(List, ry_task_t, list);
+		List = List->next;
+		/* å»¶æ—¶æ—¶é—´åˆ°äº†ï¼Œæ·»åŠ åˆ°å°±ç»ªé“¾è¡¨ */
+		if(ry_get_systick() - task->remaining_tick < RY_TICK_MAX_DIV_2)
+		{
+			ry_list_remove(&task->list);
+			ry_list_insert_after(gSysList.ready.prev, &task->list);
+			task->status = RY_TASK_READY;
+		}
+		else
+			break;
+	}
+	RY_INTERRUPT_ON;
 }
 
 
-/* Ê¹ÈÎÎñ½øÈë¾ÍÐ÷Á´±í */
+/* ä½¿ä»»åŠ¡è¿›å…¥å°±ç»ªé“¾è¡¨ */
 void ry_task_recover(ry_task_t *task, uint8_t status, uint8_t run_mode)
 {
-    if(task->status == RY_TASK_READY || task->status == RY_TASK_TIMER_READY)
-        return;
-    task->status         = status;
-    task->remaining_tick = task->init_tick + ry_get_systick();
-    _task_ctr(task, run_mode);
+	if(task->status == RY_TASK_READY || task->status == RY_TASK_TIMER_READY)
+		return;
+	task->status         = status;
+	task->remaining_tick = task->init_tick + ry_get_systick();
+	_task_ctr(task, run_mode);
 }
 
 
-/* ÒÔÑÓÊ±Ê±¼äÅÅ¶Ó£¬¹ÒÆðÈÎÎñ */
+/* ä»¥å»¶æ—¶æ—¶é—´æŽ’é˜Ÿï¼ŒæŒ‚èµ·ä»»åŠ¡ */
 void ry_task_suspend(ry_task_t *task, uint32_t tick, uint8_t run_mode)
 {
-    if(task->mode == RY_TASK_MODE_SUPER || task->status == RY_TASK_SUSPEND)
-        return;
-    task->status         = RY_TASK_SUSPEND;
-    task->remaining_tick = tick + ry_get_systick();
-    _task_ctr(task, run_mode);
+	if(task->mode == RY_TASK_MODE_SUPER || task->status == RY_TASK_SUSPEND)
+		return;
+	task->status         = RY_TASK_SUSPEND;
+	task->remaining_tick = tick + ry_get_systick();
+	_task_ctr(task, run_mode);
 }
 
 
-/* Ê¹ÈÎÎñ½øÈë´ý»úÌ¬£¬±»¶¯µÈ´ý±ðÈË»½ÐÑ */
+/* ä½¿ä»»åŠ¡è¿›å…¥å¾…æœºæ€ï¼Œè¢«åŠ¨ç­‰å¾…åˆ«äººå”¤é†’ */
 void ry_task_standby(ry_task_t *task, uint8_t run_mode)
 {
-    if(task->status == RY_TASK_STBY)
-        return;
-    task->status = RY_TASK_STBY;
-    _task_ctr(task, run_mode);
+	if(task->status == RY_TASK_STBY)
+		return;
+	task->status = RY_TASK_STBY;
+	_task_ctr(task, run_mode);
 }
+

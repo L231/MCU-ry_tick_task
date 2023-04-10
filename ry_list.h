@@ -7,7 +7,7 @@
 
 
 
-/* Ë«ÏòÁ´±í */
+/* åŒå‘é“¾è¡¨ */
 typedef struct ry_list ry_list_t;
 struct ry_list
 {
@@ -22,7 +22,7 @@ struct ry_list
 
 
 /**
- * ÃèÊö£ºÁ´±í³õÊ¼»¯
+ * æè¿°ï¼šé“¾è¡¨åˆå§‹åŒ–
  *
  **/
 ry_inline void ry_list_init(ry_list_t *l)
@@ -35,7 +35,7 @@ ry_inline void ry_list_init(ry_list_t *l)
 
 
 /**
- * ÃèÊö£ºÖ¸¶¨Á´±í½ÚµãµÄºóÃæ²åÈëĞÂ½Úµã
+ * æè¿°ï¼šæŒ‡å®šé“¾è¡¨èŠ‚ç‚¹çš„åé¢æ’å…¥æ–°èŠ‚ç‚¹
  *
  *  l ----> ln       l ----> ln       l              ln       l               ln
  *          |   ==>          |   ==>  |              |   ==>  |               |
@@ -44,10 +44,10 @@ ry_inline void ry_list_init(ry_list_t *l)
  **/
 ry_inline void ry_list_insert_after(ry_list_t *l, ry_list_t *n)
 {
-	l->next->prev = n;         /* ±»µ±Ç°½ÚµãµÄºóÒ»¸ö½ÚµãµÄÇ°ÊÖÎÕ×Å */
-	n->next       = l->next;   /* ºóÊÖÎÕ×Åµ±Ç°½ÚµãµÄºóÒ»¸ö½Úµã */
-	l->next       = n;         /* ±»µ±Ç°½ÚµãµÄºóÊÖÎÕ×Å */
-	n->prev       = l;         /* Ç°ÊÖÎÕ×Åµ±Ç°½Úµã */
+	l->next->prev = n;         /* è¢«å½“å‰èŠ‚ç‚¹çš„åä¸€ä¸ªèŠ‚ç‚¹çš„å‰æ‰‹æ¡ç€ */
+	n->next       = l->next;   /* åæ‰‹æ¡ç€å½“å‰èŠ‚ç‚¹çš„åä¸€ä¸ªèŠ‚ç‚¹ */
+	l->next       = n;         /* è¢«å½“å‰èŠ‚ç‚¹çš„åæ‰‹æ¡ç€ */
+	n->prev       = l;         /* å‰æ‰‹æ¡ç€å½“å‰èŠ‚ç‚¹ */
 }
 
 
@@ -55,7 +55,7 @@ ry_inline void ry_list_insert_after(ry_list_t *l, ry_list_t *n)
 
 
 /**
- * ÃèÊö£ºÖ¸¶¨Á´±í½ÚµãµÄÇ°Ãæ²åÈëĞÂ½Úµã
+ * æè¿°ï¼šæŒ‡å®šé“¾è¡¨èŠ‚ç‚¹çš„å‰é¢æ’å…¥æ–°èŠ‚ç‚¹
  *
  * lp <---- l       lp <---- l       lp              l       lp               l
  *  |          ==>   |          ==>   |              |  ==>   |               |
@@ -75,7 +75,7 @@ ry_inline void ry_list_insert_before(ry_list_t *l, ry_list_t *n)
 
 
 /**
- * ÃèÊö£ºÉ¾³ıÁ´±íÖĞµÄ½Úµã
+ * æè¿°ï¼šåˆ é™¤é“¾è¡¨ä¸­çš„èŠ‚ç‚¹
  *
  **/
 ry_inline void ry_list_remove(ry_list_t *n)

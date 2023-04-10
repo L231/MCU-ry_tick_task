@@ -15,9 +15,6 @@
 #define  DEVICE_CAL_FINISH            0xA5
 #define  DEVICE_CAL_NO                0xFF
 
-#define  CAL_POINT_UPLOAD_OK          0
-#define  CAL_POINT_DATA_ERR           1
-
 
 
 /* 注册校准表格。每个通道至少要有一个点，否则编译报错 */
@@ -92,11 +89,11 @@ typedef enum
 extern float    ry_get_actual(uint8_t cal_table, uint8_t ch, uint32_t val);
 extern uint32_t ry_get_original(uint8_t cal_table, uint8_t ch, int32_t val);
 extern uint32_t ry_get_basic_original(uint8_t cal_table, uint8_t ch, int32_t val);
-extern int8_t   ry_get_cal_point_pos(uint8_t cal_table, uint8_t ch, int32_t actual);
+extern uint8_t  ry_save_cal_point(uint8_t cal_table, uint8_t ch, int32_t actual, uint32_t data);
 
-extern uint8_t  ry_get_device_cal_flag(void);
-extern void     ry_cal_flag_cfg(uint8_t status);
-extern uint8_t  ry_cal_table_upload(uint8_t cal_table);
+extern uint8_t  ry_get_cal_flag(void);
+extern void     ry_set_cal_flag(uint8_t status);
+extern uint8_t  ry_cal_table_upload(void);
 
 
 

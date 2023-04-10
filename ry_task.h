@@ -1,5 +1,5 @@
 #ifndef __RY_TASK_H__
-    #define    __RY_TASK_H__
+	#define	__RY_TASK_H__
 
 
 
@@ -15,44 +15,43 @@
 
 typedef enum
 {
-    RY_TASK_MODE_NORMAL,  /* ÆÕÍ¨ÈÎÎñ,ÔËĞĞºó×Ô¶¯¹ÒÆğ */
-    RY_TASK_MODE_SUPER,   /* ÌØÈ¨ÈÎÎñ */
+    RY_TASK_MODE_NORMAL,  /* æ™®é€šä»»åŠ¡,è¿è¡Œåè‡ªåŠ¨æŒ‚èµ· */
+    RY_TASK_MODE_SUPER,   /* ç‰¹æƒä»»åŠ¡ */
     
-    RY_TASK_READY,        /* ¾ÍĞ÷Ì¬ */
-    RY_TASK_TIMER_READY,  /* ¶¨Ê±³¤¾ÍĞ÷,Ê±¼äÆ¬»úÖÆ£¬ÌØÈ¨ÈÎÎñ×¨ÓÃ */
-    RY_TASK_SUSPEND,      /* ¹ÒÆğÌ¬£¬±»ÒÆÖÁ¹ÒÆğÁ´±í */
-    RY_TASK_STBY,         /* ´ı»úÌ¬£¬±»ÒÆÖÁ´ı»úÁ´±í£¬Ö»ÄÜµÈ´ı±ğÈË»½ĞÑ */
+    RY_TASK_READY,        /* å°±ç»ªæ€ */
+    RY_TASK_TIMER_READY,  /* å®šæ—¶é•¿å°±ç»ª,æ—¶é—´ç‰‡æœºåˆ¶ï¼Œç‰¹æƒä»»åŠ¡ä¸“ç”¨ */
+    RY_TASK_SUSPEND,      /* æŒ‚èµ·æ€ï¼Œè¢«ç§»è‡³æŒ‚èµ·é“¾è¡¨ */
+    RY_TASK_STBY,         /* å¾…æœºæ€ï¼Œè¢«ç§»è‡³å¾…æœºé“¾è¡¨ï¼Œåªèƒ½ç­‰å¾…åˆ«äººå”¤é†’ */
 
-    RY_BACK,              /* ºóÌ¨Ä£Ê½ */
-    RY_IT,                /* ÖĞ¶ÏÄ£Ê½ */
+    RY_BACK,              /* åå°æ¨¡å¼ */
+    RY_IT,                /* ä¸­æ–­æ¨¡å¼ */
 }ry_task_type_t;
 
 
 
 typedef struct
 {
-    ry_list_t            ready;       /* ¾ÍĞ÷Á´±í */
-    ry_list_t            suspend;     /* ¹ÒÆğÁ´±í */
-    ry_list_t            standby;     /* ´ı»úÁ´±í */
-    ry_list_t            it;          /* ÖĞ¶ÏÁ´±í */
+    ry_list_t            ready;       /* å°±ç»ªé“¾è¡¨ */
+    ry_list_t            suspend;     /* æŒ‚èµ·é“¾è¡¨ */
+    ry_list_t            it;          /* ä¸­æ–­é“¾è¡¨ */
 }ry_sys_list_t;
 
 
-/* ÈÎÎñ½á¹¹Ìå */
+/* ä»»åŠ¡ç»“æ„ä½“ */
 typedef struct
 {
-    uint8_t              mode;                /* Ä£Ê½ */
-    uint8_t              status;              /* ¾ÍĞ÷¡¢¹ÒÆğ¡¢´ı»ú×´Ì¬ */
-    char                *name;                /* ÈÎÎñÃû³Æ */
-    void               (*func)(void);         /* ÈÎÎñÖ÷Ìå */
-    uint32_t             remaining_tick;      /* ÄÖÖÓÊ±¼ä */
-    uint32_t             init_tick;           /* Ê±³¤£¬ÅäºÏÏµÍ³Ê±¼äÉú³ÉÄÖÖÓÊ±¼ä */
-    ry_list_t            list;                /* Á´±í½Úµã */
-    ry_list_t            it_list;             /* ÖĞ¶Ïº¯ÊıÖĞ¿ÉÊ¹ÓÃµÄÁ´±í½Úµã */
+    uint8_t              mode;                /* æ¨¡å¼ */
+    uint8_t              status;              /* å°±ç»ªã€æŒ‚èµ·ã€å¾…æœºçŠ¶æ€ */
+    char                *name;                /* ä»»åŠ¡åç§° */
+    void               (*func)(void);         /* ä»»åŠ¡ä¸»ä½“ */
+    uint32_t             remaining_tick;      /* é—¹é’Ÿæ—¶é—´ */
+    uint32_t             init_tick;           /* æ—¶é•¿ï¼Œé…åˆç³»ç»Ÿæ—¶é—´ç”Ÿæˆé—¹é’Ÿæ—¶é—´ */
+    ry_list_t            list;                /* é“¾è¡¨èŠ‚ç‚¹ */
+    ry_list_t            it_list;             /* ä¸­æ–­å‡½æ•°ä¸­å¯ä½¿ç”¨çš„é“¾è¡¨èŠ‚ç‚¹ */
 }ry_task_t;
 
-    
-                        
+	
+						
 
 extern void ry_task_init(void);
 extern void ry_task_reg(ry_task_t *task, void (*func)(void),

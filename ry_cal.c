@@ -26,7 +26,7 @@ typedef struct
 
 
 /* 设备校准的标志位 */
-static uint8_t __DeviceCalFlag = 0;
+static uint8_t __DeviceCalFlag = DEVICE_CAL_NO;
 
 /* 定义各个通道的校准点 */
 CAL_TABLE(__NULL, CHANNEL_POINT_REG, POINT_CFG, POINT_END, __NULL);
@@ -48,27 +48,30 @@ ry_weak void ry_eeprom_read(uint16_t data_addr, uint8_t *pdata, uint16_t number)
 {
 	
 }
+ry_weak void ry_eeprom_write(uint16_t data_addr, uint8_t *pdata, uint8_t number)
+{
 
-void ry_cal_flag_cfg(uint8_t status)
+}
+
+void ry_set_cal_flag(uint8_t status)
 {
     __DeviceCalFlag = status;
 }
-uint8_t ry_get_device_cal_flag(void)
+uint8_t ry_get_cal_flag(void)
 {
     return __DeviceCalFlag;
 }
 
 /* 加载校准数据 */
-uint8_t ry_cal_table_upload(uint8_t cal_table)
+static uint8_t __cal_table_upload(uint8_t cal_table)
 {
-    uint8_t status = CAL_POINT_UPLOAD_OK;
     uint8_t ch, cnt, pos, pos1;
     uint8_t data[128];
     uint32_t p1, p2;
 	CalObj_t *obj;
 	
 	if(cal_table >= __CAL_TABLE_NUMBER)
-		return CAL_POINT_DATA_ERR;
+		return DEVICE_CAL_NO;
 	obj = __GET_CAL_OBJ(cal_table);
     for(ch = 0; ch < obj->ch_number; ch++)
     {
@@ -82,8 +85,8 @@ uint8_t ry_cal_table_upload(uint8_t cal_table)
                 p1 = (p1 << 8) | data[pos + pos1];
             if(p1 <= p2)
             {
-                __DeviceCalFlag = CAL_POINT_DATA_ERR;
-                status = CAL_POINT_DATA_ERR;
+            	/* 某个校准表格的某个通道，前后两个校准点出现异常情况，则当前通道的数据停止加载 */
+                __DeviceCalFlag = DEVICE_CAL_NO;
                 break;
             }
             obj->table[ch].point[cnt].original = p1;
@@ -91,26 +94,32 @@ uint8_t ry_cal_table_upload(uint8_t cal_table)
             pos += obj->table[ch].point_size;
         }
     }
-    return status;
+    return __DeviceCalFlag;
 }
 
 /* 获取校准状态，并加载校准数据 */
-uint8_t ry_get_device_cal_status(void)
+uint8_t ry_cal_table_upload(void)
 {
-    uint8_t pos;
+    uint8_t pos, result;
     uint8_t buf[1];
-    ry_eeprom_read(DEVICE_CAL_DATA_ADDR, buf, 1);
-    if(buf[0] == DEVICE_CAL_FINISH)
-    {
-        /* 加载校准数据 */
-        for(pos = 0; pos < __CAL_TABLE_NUMBER; pos++)
-        {
-            __DeviceCalFlag = ry_cal_table_upload(pos);
-        }
-        return __DeviceCalFlag;
-    }
+
     __DeviceCalFlag = DEVICE_CAL_NO;
-    return __DeviceCalFlag;
+    ry_eeprom_read(DEVICE_CAL_DATA_ADDR, buf, 1);
+    if(DEVICE_CAL_FINISH != buf[0])
+        return __DeviceCalFlag;
+
+	/* 加载校准数据 */
+    result = DEVICE_CAL_FINISH;
+	for(pos = 0; pos < __CAL_TABLE_NUMBER; pos++)
+	{
+		/* 某个校准表格加载出现异常，先记录，接着加载其余表格 */
+		if(DEVICE_CAL_NO == __cal_table_upload(pos))
+		{
+			result = DEVICE_CAL_NO;
+		}
+	}
+	__DeviceCalFlag = result;
+	return __DeviceCalFlag;
 }
 
 
@@ -240,20 +249,31 @@ uint32_t ry_get_basic_original(uint8_t cal_table, uint8_t ch, int32_t actual)
     return CalPoint[number - 1].original;
 }
 
-/* 获取校准点处于校准表格中的位置 */
-int8_t ry_get_cal_point_pos(uint8_t cal_table, uint8_t ch, int32_t actual)
+/* 获取校准点的数据 */
+uint8_t ry_save_cal_point(uint8_t cal_table, uint8_t ch, int32_t actual, uint32_t data)
 {
-    uint8_t pos;
+    uint8_t pos, i;
+    uint8_t point_size;
+    uint8_t buf[3];
 	CalObj_t *obj;
 	
-	__IS_CHANNEL(cal_table, ch, -1);
+	__IS_CHANNEL(cal_table, ch, COMMAND_PARAM_ERR);
     /* 找点 */
     for(pos = 0; pos < obj->table[ch].number; pos++)
     {
         if(actual == obj->table[ch].point[pos].actual)
-			return pos;
+        {
+        	point_size = obj->table[ch].point_size - 1;
+        	for(i = 0; i <= point_size; i++)
+        		buf[point_size - i] = data >> (8 * i);
+
+        	ry_eeprom_write(obj->table[ch].start_addr + (pos*point_size), buf, point_size);
+        	__DeviceCalFlag = DEVICE_CAL_NO;
+			return COMMAND_RUN_OK;
+        }
     }
-	return -1;
+
+	return COMMAND_PARAM_ERR;
 }
 
 
